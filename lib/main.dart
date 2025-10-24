@@ -11,7 +11,6 @@ void main() {
 
   runApp(const MyApp());
 }
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -21,8 +20,8 @@ class MyApp extends StatelessWidget {
       title: 'Al-Biruni Preschool Day Care',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        // Warna utama diubah menjadi #020B2F
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF020B2F)),
+        // Warna utama diubah menjadi ##171717
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF171717)),
         useMaterial3: true,
         fontFamily: 'PlusJakartaSans',
       ),
@@ -68,8 +67,8 @@ class _SplashScreenState extends State<SplashScreen> {
             const SizedBox(height: 16),
             Lottie.asset(
               'assets/lottie/splash.json',
-              width: 200,
-              height: 200,
+              width: 300,
+              height: 300,
               fit: BoxFit.contain,
             ),
             const SizedBox(height: 16),
@@ -77,13 +76,13 @@ class _SplashScreenState extends State<SplashScreen> {
               padding: EdgeInsets.symmetric(horizontal: 20.0),
               // Teks judul diubah
               child: Text(
-                'Al-Biruni Preschool Day Care',
+                'We Care for Your Child\'s Future',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 30,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                   // Warna teks judul diubah
-                  color: Color(0xFF020B2F),
+                  color: Color(0xFF171717),
                   fontFamily: 'PlusJakartaSans',
                 ),
               ),
@@ -93,7 +92,7 @@ class _SplashScreenState extends State<SplashScreen> {
               padding: EdgeInsets.symmetric(horizontal: 20.0),
               // Teks subjudul diubah
               child: Text(
-                'Menara Agung Group',
+                'Tempat Terbaik untuk Tumbuh dan Belajar',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
@@ -145,7 +144,7 @@ class _WebViewPageState extends State<WebViewPage> {
             setState(() {
               _isLoading = false;
             });
-            _controller.runJavaScript("document.body.style.zoom = '70%'");
+            _controller.runJavaScript("document.body.style.zoom = '100%'");
           },
           onWebResourceError: (WebResourceError error) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -177,7 +176,7 @@ class _WebViewPageState extends State<WebViewPage> {
           preferredSize: const Size.fromHeight(50.0),
           child: AppBar(
             // Warna AppBar diubah
-            backgroundColor: const Color(0xFF020B2F),
+            backgroundColor: const Color(0xFF171717),
             elevation: 0,
             systemOverlayStyle: SystemUiOverlayStyle.light,
             // Tombol 'leading' (kembali) dihilangkan secara otomatis
@@ -185,10 +184,8 @@ class _WebViewPageState extends State<WebViewPage> {
             titleSpacing: 16, // Memberi sedikit jarak dari kiri
             title: Row(
               children: const [
-                Icon(Icons.inventory_2_rounded, color: Colors.white),
-                SizedBox(width: 8),
                 Text(
-                  'albiruni Menara Agung',
+                  'Al-Biruni Preschool Day Care',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -207,7 +204,7 @@ class _WebViewPageState extends State<WebViewPage> {
               const Center(
                 // Warna indikator loading diubah
                 child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF020B2F)),
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF171717)),
                 ),
               ),
           ],
