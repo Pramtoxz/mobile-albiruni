@@ -20,8 +20,8 @@ class MyApp extends StatelessWidget {
       title: 'Al-Biruni Preschool Day Care',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        // Warna utama diubah menjadi ##171717
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF171717)),
+        // Warna utama diubah menjadi ##00AEE9
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF00AEE9)),
         useMaterial3: true,
         fontFamily: 'PlusJakartaSans',
       ),
@@ -82,7 +82,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   // Warna teks judul diubah
-                  color: Color(0xFF171717),
+                  color: Color(0xFF00AEE9),
                   fontFamily: 'PlusJakartaSans',
                 ),
               ),
@@ -176,7 +176,7 @@ class _WebViewPageState extends State<WebViewPage> {
           preferredSize: const Size.fromHeight(50.0),
           child: AppBar(
             // Warna AppBar diubah
-            backgroundColor: const Color(0xFF171717),
+            backgroundColor: const Color(0xFF00AEE9),
             elevation: 0,
             systemOverlayStyle: SystemUiOverlayStyle.light,
             // Tombol 'leading' (kembali) dihilangkan secara otomatis
@@ -204,7 +204,7 @@ class _WebViewPageState extends State<WebViewPage> {
               const Center(
                 // Warna indikator loading diubah
                 child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF171717)),
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00AEE9)),
                 ),
               ),
           ],
