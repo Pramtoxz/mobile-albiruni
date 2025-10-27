@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'dart:async';
+import 'dart:io';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,6 +15,7 @@ void main() {
 
   runApp(const MyApp());
 }
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -118,13 +123,64 @@ class WebViewPage extends StatefulWidget {
 class _WebViewPageState extends State<WebViewPage> {
   late final WebViewController _controller;
   bool _isLoading = true;
+  bool _hasInternet = true;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
   final String _homeUrl = 'https://dev-schalbiruni.myserverku.web.id/login';
 
   @override
   void initState() {
     super.initState();
+    _requestPermissions();
+    _checkConnectivity();
     _initializeWebView();
+    _setupConnectivityListener();
+  }
+
+  @override
+  void dispose() {
+    _connectivitySubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _requestPermissions() async {
+    if (Platform.isAndroid) {
+      // Request camera and photo permissions
+      await Permission.camera.request();
+      await Permission.photos.request();
+      if (await Permission.storage.isDenied) {
+        await Permission.storage.request();
+      }
+
+      // Request location permissions for attendance feature
+      await Permission.location.request();
+      await Permission.locationWhenInUse.request();
+    } else if (Platform.isIOS) {
+      // Request camera and photo permissions
+      await Permission.camera.request();
+      await Permission.photos.request();
+
+      // Request location permissions for attendance feature
+      await Permission.location.request();
+      await Permission.locationWhenInUse.request();
+    }
+  }
+
+  Future<void> _checkConnectivity() async {
+    final connectivityResult = await Connectivity().checkConnectivity();
+    setState(() {
+      _hasInternet = !connectivityResult.contains(ConnectivityResult.none);
+    });
+  }
+
+  void _setupConnectivityListener() {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
+      List<ConnectivityResult> result,
+    ) {
+      setState(() {
+        _hasInternet = !result.contains(ConnectivityResult.none);
+      });
+    });
   }
 
   void _initializeWebView() {
@@ -159,18 +215,90 @@ class _WebViewPageState extends State<WebViewPage> {
       ..loadRequest(Uri.parse(_homeUrl));
   }
 
-  Future<bool> _onWillPop() async {
-    if (await _controller.canGoBack()) {
-      _controller.goBack();
-      return false;
+  void _reloadPage() {
+    _checkConnectivity();
+    if (_hasInternet) {
+      _controller.loadRequest(Uri.parse(_homeUrl));
     }
-    return true;
   }
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: _onWillPop,
+    if (!_hasInternet) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Lottie.asset(
+                'assets/lottie/nointernet.json',
+                width: 300,
+                height: 300,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Tidak Ada Koneksi Internet',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF00AEE9),
+                  fontFamily: 'PlusJakartaSans',
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 40.0),
+                child: Text(
+                  'Periksa koneksi internet Anda dan coba lagi',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF7F8C8D),
+                    fontFamily: 'PlusJakartaSans',
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton.icon(
+                onPressed: _reloadPage,
+                icon: const Icon(Icons.refresh, color: Colors.white),
+                label: const Text(
+                  'Muat Ulang',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'PlusJakartaSans',
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00AEE9),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (!didPop && await _controller.canGoBack()) {
+          _controller.goBack();
+        }
+      },
       child: Scaffold(
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(50.0),
@@ -182,8 +310,8 @@ class _WebViewPageState extends State<WebViewPage> {
             // Tombol 'leading' (kembali) dihilangkan secara otomatis
             automaticallyImplyLeading: false,
             titleSpacing: 16, // Memberi sedikit jarak dari kiri
-            title: Row(
-              children: const [
+            title: const Row(
+              children: [
                 Text(
                   'Al-Biruni Preschool Day Care',
                   style: TextStyle(

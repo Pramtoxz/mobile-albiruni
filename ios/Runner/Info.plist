@@ -45,5 +45,17 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Aplikasi memerlukan akses kamera untuk mengambil foto</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Aplikasi memerlukan akses galeri untuk memilih foto</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Aplikasi memerlukan akses untuk menyimpan foto ke galeri</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Aplikasi memerlukan akses lokasi untuk fitur absensi guru</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Aplikasi memerlukan akses lokasi untuk fitur absensi guru</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Aplikasi memerlukan akses lokasi untuk fitur absensi guru</string>
 </dict>
 </plist>
