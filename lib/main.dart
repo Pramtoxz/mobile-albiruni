@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'dart:async';
+import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
 void main() {
@@ -124,7 +125,6 @@ class _WebViewPageState extends State<WebViewPage> {
   late final WebViewController _controller;
   bool _isLoading = true;
   bool _hasInternet = true;
-  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
   final String _homeUrl = 'https://dev-schalbiruni.myserverku.web.id/login';
 
@@ -134,35 +134,50 @@ class _WebViewPageState extends State<WebViewPage> {
     _requestPermissions();
     _checkConnectivity();
     _initializeWebView();
-    _setupConnectivityListener();
-  }
-
-  @override
-  void dispose() {
-    _connectivitySubscription?.cancel();
-    super.dispose();
   }
 
   Future<void> _requestPermissions() async {
     if (Platform.isAndroid) {
-      // Request camera and photo permissions
-      await Permission.camera.request();
-      await Permission.photos.request();
-      if (await Permission.storage.isDenied) {
+      // Request camera permission only if not granted
+      if (!await Permission.camera.isGranted) {
+        await Permission.camera.request();
+      }
+
+      // Request photo/storage permissions only if not granted
+      if (!await Permission.photos.isGranted) {
+        await Permission.photos.request();
+      }
+
+      if (await Permission.storage.isDenied &&
+          !await Permission.storage.isPermanentlyDenied) {
         await Permission.storage.request();
       }
 
-      // Request location permissions for attendance feature
-      await Permission.location.request();
-      await Permission.locationWhenInUse.request();
+      // Request location permissions only if not granted
+      if (!await Permission.location.isGranted) {
+        await Permission.location.request();
+      }
+      if (!await Permission.locationWhenInUse.isGranted) {
+        await Permission.locationWhenInUse.request();
+      }
     } else if (Platform.isIOS) {
-      // Request camera and photo permissions
-      await Permission.camera.request();
-      await Permission.photos.request();
+      // Request camera permission only if not granted
+      if (!await Permission.camera.isGranted) {
+        await Permission.camera.request();
+      }
 
-      // Request location permissions for attendance feature
-      await Permission.location.request();
-      await Permission.locationWhenInUse.request();
+      // Request photo permissions only if not granted
+      if (!await Permission.photos.isGranted) {
+        await Permission.photos.request();
+      }
+
+      // Request location permissions only if not granted
+      if (!await Permission.location.isGranted) {
+        await Permission.location.request();
+      }
+      if (!await Permission.locationWhenInUse.isGranted) {
+        await Permission.locationWhenInUse.request();
+      }
     }
   }
 
@@ -170,16 +185,6 @@ class _WebViewPageState extends State<WebViewPage> {
     final connectivityResult = await Connectivity().checkConnectivity();
     setState(() {
       _hasInternet = !connectivityResult.contains(ConnectivityResult.none);
-    });
-  }
-
-  void _setupConnectivityListener() {
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
-      List<ConnectivityResult> result,
-    ) {
-      setState(() {
-        _hasInternet = !result.contains(ConnectivityResult.none);
-      });
     });
   }
 
@@ -213,10 +218,90 @@ class _WebViewPageState extends State<WebViewPage> {
         ),
       )
       ..loadRequest(Uri.parse(_homeUrl));
+
+    // Setup file picker for Android
+    if (Platform.isAndroid) {
+      AndroidWebViewController.enableDebugging(true);
+      (_controller.platform as AndroidWebViewController).setOnShowFileSelector(
+        _onShowFileSelector,
+      );
+    }
   }
 
-  void _reloadPage() {
-    _checkConnectivity();
+  Future<List<String>> _onShowFileSelector(FileSelectorParams params) async {
+    final ImagePicker picker = ImagePicker();
+
+    // Show dialog to choose source
+    final source = await showDialog<ImageSource>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text(
+            'Pilih Sumber',
+            style: TextStyle(fontFamily: 'PlusJakartaSans'),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Color(0xFF00AEE9)),
+                title: const Text(
+                  'Kamera',
+                  style: TextStyle(fontFamily: 'PlusJakartaSans'),
+                ),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.photo_library,
+                  color: Color(0xFF00AEE9),
+                ),
+                title: const Text(
+                  'Galeri',
+                  style: TextStyle(fontFamily: 'PlusJakartaSans'),
+                ),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (source == null) return [];
+
+    try {
+      final XFile? photo = await picker.pickImage(
+        source: source,
+        imageQuality: 85,
+        maxWidth: 1920,
+        maxHeight: 1920,
+      );
+
+      if (photo != null) {
+        // Return file URI with proper format for WebView
+        final File file = File(photo.path);
+        if (await file.exists()) {
+          // Use file:// URI scheme for proper file handling
+          return ['file://${photo.path}'];
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error memilih gambar: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+
+    return [];
+  }
+
+  Future<void> _reloadPage() async {
+    await _checkConnectivity();
     if (_hasInternet) {
       _controller.loadRequest(Uri.parse(_homeUrl));
     }
