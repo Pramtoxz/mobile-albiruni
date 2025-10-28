@@ -11,6 +11,9 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     
+    <!-- FCM Notification Permission -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
@@ -19,6 +22,15 @@
         android:label="albiruni"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
+        
+        <!-- FCM Notification Icon & Color -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/launcher_icon" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@android:color/holo_blue_light" />
+        
         <activity
             android:name=".MainActivity"
             android:exported="true"

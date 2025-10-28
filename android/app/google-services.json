@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "477263653373",
+    "project_id": "albiruni-pre-school",
+    "storage_bucket": "albiruni-pre-school.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:477263653373:android:835e181578ac445b399194",
+        "android_client_info": {
+          "package_name": "com.example.albiruni"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB6P_a4ZFXdqncKDQckiKnjZkJgq61E010"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

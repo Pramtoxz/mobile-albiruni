@@ -6,10 +6,35 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:io';
+import 'dart:developer' as developer;
+import 'services/fcm_service.dart';
+import 'services/notification_handler.dart';
+import 'firebase_options.dart';
 
-void main() {
+// Background message handler (must be top-level function)
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  developer.log(
+    '[FCM] Background message: ${message.notification?.title}',
+    name: 'FCM',
+  );
+}
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Set background message handler
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  // Initialize FCM Service
+  await FcmService().initialize();
 
   // Mengunci orientasi ke mode potret (tegak)
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
@@ -125,8 +150,10 @@ class _WebViewPageState extends State<WebViewPage> {
   late final WebViewController _controller;
   bool _isLoading = true;
   bool _hasInternet = true;
+  NotificationHandler? _notificationHandler;
 
   final String _homeUrl = 'https://dev-schalbiruni.myserverku.web.id/login';
+  final FcmService _fcmService = FcmService();
 
   @override
   void initState() {
@@ -206,6 +233,9 @@ class _WebViewPageState extends State<WebViewPage> {
               _isLoading = false;
             });
             _controller.runJavaScript("document.body.style.zoom = '100%'");
+
+            // Automatically send FCM token to WebView after page loads
+            _sendTokenToWebView();
           },
           onWebResourceError: (WebResourceError error) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -217,6 +247,13 @@ class _WebViewPageState extends State<WebViewPage> {
           },
         ),
       )
+      // Add JavaScript Channel for FCM
+      ..addJavaScriptChannel(
+        'FlutterBridge',
+        onMessageReceived: (JavaScriptMessage message) {
+          _handleJavaScriptMessage(message.message);
+        },
+      )
       ..loadRequest(Uri.parse(_homeUrl));
 
     // Setup file picker for Android
@@ -225,6 +262,75 @@ class _WebViewPageState extends State<WebViewPage> {
       (_controller.platform as AndroidWebViewController).setOnShowFileSelector(
         _onShowFileSelector,
       );
+    }
+
+    // Initialize notification handler
+    _notificationHandler = NotificationHandler(
+      webViewController: _controller,
+      baseUrl: _homeUrl,
+    );
+    _notificationHandler!.initialize();
+  }
+
+  // Automatically send FCM token to WebView
+  Future<void> _sendTokenToWebView() async {
+    // Wait a bit for page to fully load
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    String? token = await _fcmService.getToken();
+    if (token != null) {
+      developer.log('[FCM] Auto-sending token to WebView: $token', name: 'FCM');
+
+      // Check if receiveFCMToken function exists, if not create it
+      await _controller.runJavaScript("""
+        if (typeof window.receiveFCMToken === 'undefined') {
+          window.receiveFCMToken = function(token) {
+            console.log('[FCM] Received token from Flutter:', token);
+            
+            // Send token to Laravel backend
+            fetch('/api/device-tokens', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+              },
+              body: JSON.stringify({
+                fcm_token: token,
+                device_type: 'android',
+                device_name: navigator.userAgent
+              })
+            })
+            .then(response => response.json())
+            .then(data => {
+              console.log('[FCM] Token registered:', data);
+            })
+            .catch(error => {
+              console.error('[FCM] Failed to register token:', error);
+            });
+          };
+        }
+        
+        // Call the function with token
+        window.receiveFCMToken('$token');
+      """);
+    } else {
+      developer.log('[FCM] Token is null, cannot send', name: 'FCM');
+    }
+  }
+
+  // Handle JavaScript messages from WebView
+  void _handleJavaScriptMessage(String message) async {
+    developer.log('[FCM] JavaScript message: $message', name: 'FCM');
+
+    if (message == 'get_fcm_token') {
+      // Get FCM token and send back to WebView
+      String? token = await _fcmService.getToken();
+      if (token != null) {
+        developer.log('[FCM] Sending token to WebView: $token', name: 'FCM');
+        _controller.runJavaScript("window.receiveFCMToken('$token')");
+      } else {
+        developer.log('[FCM] Token is null', name: 'FCM');
+      }
     }
   }
 
