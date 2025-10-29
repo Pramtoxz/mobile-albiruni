@@ -13,6 +13,7 @@ import 'dart:developer' as developer;
 import 'services/fcm_service.dart';
 import 'services/notification_handler.dart';
 import 'firebase_options.dart';
+import 'package:flutter/foundation.dart' show kReleaseMode;
 
 // Background message handler (must be top-level function)
 @pragma('vm:entry-point')
@@ -218,6 +219,8 @@ class _WebViewPageState extends State<WebViewPage> {
   void _initializeWebView() {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(Colors.white)
+      ..enableZoom(false)
       ..setNavigationDelegate(
         NavigationDelegate(
           onProgress: (int progress) {
@@ -256,12 +259,17 @@ class _WebViewPageState extends State<WebViewPage> {
       )
       ..loadRequest(Uri.parse(_homeUrl));
 
-    // Setup file picker for Android
+    // Setup Android WebView
     if (Platform.isAndroid) {
-      AndroidWebViewController.enableDebugging(true);
-      (_controller.platform as AndroidWebViewController).setOnShowFileSelector(
-        _onShowFileSelector,
-      );
+      if (!kReleaseMode) {
+        AndroidWebViewController.enableDebugging(true);
+      }
+
+      final androidController =
+          _controller.platform as AndroidWebViewController;
+
+      androidController.setMediaPlaybackRequiresUserGesture(false);
+      androidController.setOnShowFileSelector(_onShowFileSelector);
     }
 
     // Initialize notification handler
@@ -272,49 +280,53 @@ class _WebViewPageState extends State<WebViewPage> {
     _notificationHandler!.initialize();
   }
 
-  // Automatically send FCM token to WebView
   Future<void> _sendTokenToWebView() async {
-    // Wait a bit for page to fully load
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 2000));
 
     String? token = await _fcmService.getToken();
-    if (token != null) {
-      developer.log('[FCM] Auto-sending token to WebView: $token', name: 'FCM');
+    if (token == null) {
+      await Future.delayed(const Duration(seconds: 1));
+      token = await _fcmService.getToken();
+    }
 
-      // Check if receiveFCMToken function exists, if not create it
-      await _controller.runJavaScript("""
-        if (typeof window.receiveFCMToken === 'undefined') {
-          window.receiveFCMToken = function(token) {
-            console.log('[FCM] Received token from Flutter:', token);
+    if (token != null) {
+      try {
+        await _controller.runJavaScript("""
+          (function() {
+            var token = '$token';
+            console.log('[FCM] Token:', token);
             
-            // Send token to Laravel backend
-            fetch('/api/device-tokens', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
-              },
-              body: JSON.stringify({
-                fcm_token: token,
-                device_type: 'android',
-                device_name: navigator.userAgent
-              })
-            })
-            .then(response => response.json())
-            .then(data => {
-              console.log('[FCM] Token registered:', data);
-            })
-            .catch(error => {
-              console.error('[FCM] Failed to register token:', error);
-            });
-          };
-        }
-        
-        // Call the function with token
-        window.receiveFCMToken('$token');
-      """);
+            if (typeof window.receiveFCMToken === 'undefined') {
+              window.receiveFCMToken = function(t) {
+                fetch('/api/device-tokens', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                  },
+                  body: JSON.stringify({
+                    fcm_token: t,
+                    device_type: 'android',
+                    device_name: navigator.userAgent
+                  })
+                })
+                .then(r => r.json())
+                .then(d => console.log('[FCM] OK:', d))
+                .catch(e => console.error('[FCM] Err:', e));
+              };
+            }
+            
+            window.receiveFCMToken(token);
+          })();
+        """);
+      } catch (e) {
+        developer.log('[FCM] JS Error: $e', name: 'FCM');
+      }
     } else {
-      developer.log('[FCM] Token is null, cannot send', name: 'FCM');
+      developer.log(
+        '[FCM] Token is null after retry, cannot send',
+        name: 'FCM',
+      );
     }
   }
 
