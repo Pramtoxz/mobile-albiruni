@@ -76,7 +76,7 @@ class FcmService {
   // Initialize local notifications
   Future<void> _initializeLocalNotifications() async {
     const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/launcher_icon');
+        AndroidInitializationSettings('@drawable/ic_notification');
 
     const DarwinInitializationSettings iosSettings =
         DarwinInitializationSettings(
@@ -133,7 +133,7 @@ class FcmService {
                 'This channel is used for important notifications.',
             importance: Importance.high,
             priority: Priority.high,
-            icon: '@mipmap/launcher_icon',
+            icon: '@drawable/ic_notification',
           ),
         ),
         payload: message.data['url'],

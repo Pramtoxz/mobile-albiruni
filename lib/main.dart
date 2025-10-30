@@ -330,7 +330,6 @@ class _WebViewPageState extends State<WebViewPage> {
     }
   }
 
-  // Handle JavaScript messages from WebView
   void _handleJavaScriptMessage(String message) async {
     developer.log('[FCM] JavaScript message: $message', name: 'FCM');
 

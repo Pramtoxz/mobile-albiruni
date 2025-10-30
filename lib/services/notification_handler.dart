@@ -49,7 +49,19 @@ class NotificationHandler {
     String? url = message.data['url'];
     if (url != null && url.isNotEmpty) {
       // Navigate WebView to the URL
-      String fullUrl = url.startsWith('http') ? url : '$baseUrl$url';
+      String fullUrl;
+      if (url.startsWith('http')) {
+        // Full URL provided
+        fullUrl = url;
+      } else {
+        // Relative URL - extract base domain from baseUrl
+        Uri baseUri = Uri.parse(baseUrl);
+        String baseDomain = '${baseUri.scheme}://${baseUri.host}';
+        if (baseUri.hasPort) {
+          baseDomain += ':${baseUri.port}';
+        }
+        fullUrl = '$baseDomain$url';
+      }
       developer.log('[FCM] Navigating to: $fullUrl', name: 'FCM');
       webViewController.loadRequest(Uri.parse(fullUrl));
     }
