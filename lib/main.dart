@@ -57,6 +57,13 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         fontFamily: 'PlusJakartaSans',
       ),
+      // Isolasi WebView dari perubahan skala teks sistem
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
+          child: child!,
+        );
+      },
       home: const SplashScreen(),
     );
   }
@@ -235,6 +242,7 @@ class _WebViewPageState extends State<WebViewPage> {
             setState(() {
               _isLoading = false;
             });
+            // Atur zoom level WebView (70%, 80%, atau 100%)
             _controller.runJavaScript("document.body.style.zoom = '100%'");
 
             // Automatically send FCM token to WebView after page loads
@@ -502,31 +510,6 @@ class _WebViewPageState extends State<WebViewPage> {
         }
       },
       child: Scaffold(
-        appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(50.0),
-          child: AppBar(
-            // Warna AppBar diubah
-            backgroundColor: const Color(0xFF00AEE9),
-            elevation: 0,
-            systemOverlayStyle: SystemUiOverlayStyle.light,
-            // Tombol 'leading' (kembali) dihilangkan secara otomatis
-            automaticallyImplyLeading: false,
-            titleSpacing: 16, // Memberi sedikit jarak dari kiri
-            title: const Row(
-              children: [
-                Text(
-                  'Al-Biruni Preschool Day Care',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
-            // Semua tombol 'actions' telah dihilangkan
-          ),
-        ),
         body: Stack(
           children: [
             WebViewWidget(controller: _controller),
