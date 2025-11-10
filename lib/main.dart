@@ -160,7 +160,7 @@ class _WebViewPageState extends State<WebViewPage> {
   bool _hasInternet = true;
   NotificationHandler? _notificationHandler;
 
-  final String _homeUrl = 'https://dev-schalbiruni.myserverku.web.id/login';
+  final String _homeUrl = 'https://albiruni.sch.id/login';
   final FcmService _fcmService = FcmService();
 
   @override
